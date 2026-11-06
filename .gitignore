@@ -18,3 +18,8 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# Project-local tools, database, secrets and process logs
+.local/
+data/dummyjson-original.json
+data/openlibrary-*.json

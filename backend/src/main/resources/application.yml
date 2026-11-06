@@ -1,0 +1,29 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${PORT:18080}
+spring:
+  mail:
+    host: ${MAIL_HOST:127.0.0.1}
+    port: ${MAIL_PORT:11025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: ${MAIL_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+      mail.smtp.localhost: localhost
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:13306/shiguang_shop?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Shanghai}
+    username: ${DB_USERNAME:shiguang_app}
+    password: ${DB_PASSWORD}
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    resources:
+      add-mappings: true
