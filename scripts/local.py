@@ -37,6 +37,7 @@ def environment(t, config):
     env['SERVER_ADDRESS'] = '127.0.0.1'
     env['DEMO_ADMIN_PASSWORD'] = config['adminPassword']
     env['DEMO_CUSTOMER_PASSWORD'] = config['customerPassword']
+    env['DEMO_SEED_ORDERS'] = 'true'
     return env
 
 def run(command, **kwargs):
@@ -88,7 +89,8 @@ def database(t, config):
 
 def build(t, config):
     pnpm = t['node'].parent.parent / 'node_modules/pnpm/bin/pnpm.cjs'
-    if not pnpm.exists(): raise RuntimeError('pnpm not found next to Node; install pnpm and adjust the launcher.')
+    if not pnpm.exists(): pnpm = LOCAL / 'pnpm/package/bin/pnpm.cjs'
+    if not pnpm.exists(): raise RuntimeError('Run python scripts/setup-local.py first to install pnpm.')
     if not (ROOT / 'frontend/node_modules/vite/bin/vite.js').exists():
         run([t['node'], pnpm, 'install', '--frozen-lockfile', '--store-dir', LOCAL / 'pnpm-store'], cwd=ROOT / 'frontend')
     run([t['node'], ROOT / 'frontend/node_modules/vite/bin/vite.js', 'build'], cwd=ROOT / 'frontend')
@@ -100,27 +102,43 @@ def start(t, config):
         spawn([shutil.which('python'), ROOT / 'scripts/mail_capture.py'], 'mail-capture.log')
     if port_open(18080):
         with urllib.request.urlopen('http://127.0.0.1:18080/api/health', timeout=3) as response:
-            if json.load(response).get('database') != 'UP': raise RuntimeError('Backend health check failed.')
+            health=json.load(response)
+            if health.get('status') != 'UP' or health.get('application') != 'shiguang-shop': raise RuntimeError('Backend health check failed or the port belongs to another app.')
         print('Shop is already running: http://127.0.0.1:18080', flush=True)
         return
     jar = ROOT / 'backend/target/shop-0.1.0.jar'
     if not jar.exists(): raise RuntimeError('Build first: python scripts/local.py build')
-    process = spawn([t['java'], '-jar', jar], 'backend.log', environment(t, config))
+    runtime_jar=LOCAL/'run/shop.jar'
+    runtime_jar.parent.mkdir(exist_ok=True)
+    shutil.copy2(jar,runtime_jar)
+    process = spawn([t['java'], '-jar', runtime_jar], 'backend.log', environment(t, config))
     (LOCAL / 'backend.pid').write_text(str(process.pid))
     for _ in range(90):
         if process.poll() is not None: raise RuntimeError('Backend exited. See .local/backend.log')
         try:
             with urllib.request.urlopen('http://127.0.0.1:18080/api/health', timeout=1) as response:
-                if json.load(response).get('database') == 'UP':
+                health=json.load(response)
+                if health.get('status') == 'UP' and health.get('application') == 'shiguang-shop':
                     print('Shop is ready: http://127.0.0.1:18080', flush=True)
                     return
         except (OSError, ValueError): pass
         time.sleep(1)
     raise RuntimeError('Backend startup timed out. See .local/backend.log')
 
+def stop():
+    path=LOCAL/'backend.pid'
+    if not path.exists(): return
+    pid=int(path.read_text())
+    jar=str(LOCAL/'run/shop.jar').replace("'","''")
+    command="$p=Get-CimInstance Win32_Process -Filter 'ProcessId="+str(pid)+"'; if($p -and $p.CommandLine.Contains('"+jar+"')) { Stop-Process -Id "+str(pid)+"; Write-Output 'Stopped project backend' } elseif($p) { throw 'PID belongs to a different process; nothing stopped.' }"
+    run(['powershell','-NoProfile','-Command',command])
+    path.unlink()
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('action', choices=['database', 'build', 'start'])
+    parser = argparse.ArgumentParser(); parser.add_argument('action', choices=['database', 'build', 'start', 'stop', 'restart'])
     args = parser.parse_args(); t = tools(); config = settings()
-    if args.action == 'database': database(t, config)
+    if args.action == 'stop': stop()
+    elif args.action == 'restart': stop(); start(t, config)
+    elif args.action == 'database': database(t, config)
     elif args.action == 'build': build(t, config)
     else: start(t, config)
