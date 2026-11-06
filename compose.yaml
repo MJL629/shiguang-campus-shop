@@ -1,0 +1,58 @@
+# A persistent production stack. Copy .env.example to .env and supply real credentials before starting.
+services:
+  mysql:
+    image: mysql:8.4.13
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: shiguang_shop
+      MYSQL_USER: shiguang_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      TZ: Asia/Shanghai
+    command: ["--default-time-zone=+08:00"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [private]
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/shiguang_shop?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Shanghai
+      DB_USERNAME: shiguang_app
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?Set a strong admin password}
+      DEMO_CUSTOMER_PASSWORD: ${DEMO_CUSTOMER_PASSWORD:?Set a test account password}
+      DEMO_SEED_ORDERS: ${DEMO_SEED_ORDERS:-false}
+      MAIL_HOST: ${MAIL_HOST:?Set your SMTP host}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:?Set your SMTP username}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set your SMTP password}
+      MAIL_FROM: ${MAIL_FROM:?Set your sender address}
+      MAIL_MODE: SMTP
+      MAIL_AUTH: "true"
+      MAIL_STARTTLS: "true"
+      SESSION_COOKIE_SECURE: "true"
+      TZ: Asia/Shanghai
+    networks: [private, web]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment: { SHOP_DOMAIN: "${SHOP_DOMAIN:?Set SHOP_DOMAIN}" }
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: ["./deploy/Caddyfile:/etc/caddy/Caddyfile:ro", "caddy-data:/data", "caddy-config:/config"]
+    depends_on: [app]
+    networks: [web]
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
+networks:
+  private:
+    internal: true
+  web:

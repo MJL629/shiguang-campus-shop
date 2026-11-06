@@ -1,0 +1,12 @@
+.git
+.local
+**/node_modules
+**/target
+**/dist
+design
+data/*-original.json
+data/openlibrary-*.json
+*.log
+.env
+.env.*
+!.env.example

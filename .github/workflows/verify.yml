@@ -1,0 +1,57 @@
+name: Verify shop
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4.13
+        env:
+          MYSQL_DATABASE: shiguang_ci
+          MYSQL_USER: ci
+          MYSQL_PASSWORD: ci-test-only-password
+          MYSQL_ROOT_PASSWORD: ci-root-test-only-password
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    env:
+      MYSQL_TEST_URL: jdbc:mysql://127.0.0.1:3306/shiguang_ci?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Shanghai
+      MYSQL_TEST_USER: ci
+      MYSQL_TEST_PASSWORD: ci-test-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: Build Vue frontend
+        working-directory: frontend
+        run: pnpm exec vite build
+      - name: Verify Spring Boot backend
+        working-directory: backend
+        run: mvn -B -ntp verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shiguang-shop-jar
+          path: backend/target/shop-0.1.0.jar
+          retention-days: 7
+      - name: Build deployment image
+        run: docker build -t shiguang-shop:ci .
