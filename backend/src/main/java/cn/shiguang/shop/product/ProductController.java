@@ -23,8 +23,11 @@ public class ProductController {
       @RequestParam(defaultValue = "") @Size(max = 100) String keyword,
       @RequestParam(defaultValue = "") @Size(max = 40) String category,
       @RequestParam(defaultValue = "1") @Min(1) @Max(1000000) int page,
-      @RequestParam(defaultValue = "9") @Min(1) @Max(50) int size) {
-    return products.search(keyword.trim(), category.trim(), page, size);
+      @RequestParam(defaultValue = "9") @Min(1) @Max(50) int size,
+      @RequestParam(defaultValue = "featured")
+          @jakarta.validation.constraints.Pattern(regexp = "featured|price_asc|price_desc|newest")
+          String sort) {
+    return products.search(keyword.trim(), category.trim(), page, size, sort);
   }
 
   @GetMapping("/products/{id}")

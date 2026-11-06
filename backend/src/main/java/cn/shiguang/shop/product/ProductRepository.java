@@ -22,7 +22,14 @@ public class ProductRepository {
     this.jdbc = jdbc;
   }
 
-  public ProductPage search(String keyword, String category, int page, int size) {
+  public ProductPage search(String keyword, String category, int page, int size, String sort) {
+    String ordering =
+        switch (sort) {
+          case "price_asc" -> "price ASC, id ASC";
+          case "price_desc" -> "price DESC, id ASC";
+          case "newest" -> "id DESC";
+          default -> "id ASC";
+        };
     String pattern = "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
     long total =
         bind(jdbc.sql("SELECT COUNT(*)" + FILTER), keyword, category, pattern)
@@ -30,7 +37,13 @@ public class ProductRepository {
             .single();
     List<Product> items =
         bind(
-                jdbc.sql("SELECT " + COLUMNS + FILTER + " ORDER BY id LIMIT :limit OFFSET :offset"),
+                jdbc.sql(
+                    "SELECT "
+                        + COLUMNS
+                        + FILTER
+                        + " ORDER BY "
+                        + ordering
+                        + " LIMIT :limit OFFSET :offset"),
                 keyword,
                 category,
                 pattern)

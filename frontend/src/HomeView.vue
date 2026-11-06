@@ -1,6 +1,6 @@
 <!-- AI-assisted implementation with Codex. Product content is loaded from Spring Boot/MySQL. -->
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { addToCart } from "./lib/shop";
 async function addSelected() {
   dialog.value.close();
@@ -11,6 +11,7 @@ const items = ref([]),
   total = ref(0),
   page = ref(1);
 const keyword = ref(""),
+  sort = ref("featured"),
   category = ref(""),
   loading = ref(false),
   error = ref("");
@@ -40,6 +41,7 @@ async function loadProducts() {
     const query = new URLSearchParams({
       keyword: keyword.value.trim(),
       category: category.value,
+      sort: sort.value,
       page: page.value,
       size,
     });
@@ -80,6 +82,7 @@ async function showProduct(id) {
   detailError.value = "";
   try {
     selected.value = await readJson("/api/products/" + id, request.signal);
+    await nextTick();
     if (!dialog.value.open) dialog.value.showModal();
   } catch (e) {
     if (e.name !== "AbortError") detailError.value = e.message;
@@ -153,7 +156,15 @@ const money = (value) => Number(value).toFixed(2);
             {{ item }}
           </button>
         </div>
-        <span class="quiet">为学习，也为生活。</span>
+        <label class="sort-control"
+          ><span class="sr-only">商品排序</span
+          ><select v-model="sort" @change="search">
+            <option value="featured">默认推荐</option>
+            <option value="price_asc">价格从低到高</option>
+            <option value="price_desc">价格从高到低</option>
+            <option value="newest">最新上架</option>
+          </select></label
+        >
       </div>
       <div aria-live="polite" :aria-busy="loading">
         <p v-if="loading" class="state">正在寻找日常好物…</p>
@@ -178,7 +189,7 @@ const money = (value) => Number(value).toFixed(2);
                   (event) => (event.target.src = '/images/book-fallback.svg')
                 "
                 :class="{
-                  'book-image': product.sourceType === 'OPEN_LIBRARY',
+                  'study-cover': product.sourceType === 'OPEN_LIBRARY',
                   'catalog-image': product.sourceType === 'DUMMYJSON',
                 }"
                 :src="product.imageUrl"
@@ -246,6 +257,14 @@ const money = (value) => Number(value).toFixed(2);
         <span class="kicker">{{ selected.category }}</span>
         <h2 id="detail-title">{{ selected.name }}</h2>
         <p class="detail-price">¥{{ money(selected.price) }}</p>
+        <p
+          v-if="
+            selected.originalName && selected.originalName !== selected.name
+          "
+          class="original-name"
+        >
+          {{ selected.originalName }}
+        </p>
         <p>{{ selected.description }}</p>
         <div class="stock">
           {{
@@ -266,6 +285,9 @@ const money = (value) => Number(value).toFixed(2);
             rel="noopener noreferrer"
             >查看来源 ↗</a
           >
+        </p>
+        <p v-if="selected.sourceType === 'OPEN_LIBRARY'" class="image-note">
+          封面为本站原创书目示意设计，非出版社实物封面。
         </p>
         <p class="stage-note">
           人民币价格和库存为课程演示数据，不代表实际销售承诺。
