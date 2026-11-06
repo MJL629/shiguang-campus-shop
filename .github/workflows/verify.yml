@@ -45,6 +45,11 @@ jobs:
       - name: Build Vue frontend
         working-directory: frontend
         run: pnpm exec vite build
+      - name: Verify timestamp display
+        working-directory: frontend
+        run: node --test test/format.test.js
+      - name: Verify local SMTP inbox
+        run: python3 scripts/test_mail_capture.py
       - name: Verify Spring Boot backend
         working-directory: backend
         run: mvn -B -ntp verify

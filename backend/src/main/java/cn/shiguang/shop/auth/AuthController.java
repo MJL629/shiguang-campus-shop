@@ -80,6 +80,8 @@ public class AuthController {
   @PostMapping("/login")
   public UserView login(
       @Valid @RequestBody Login body, HttpServletRequest request, HttpServletResponse response) {
+    if (body.password().getBytes(StandardCharsets.UTF_8).length > 72)
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "密码过长，请减少汉字或特殊字符数量");
     Credential user = credential(body.username());
     // Use a valid dummy hash to reduce account enumeration via response time.
     String hash =

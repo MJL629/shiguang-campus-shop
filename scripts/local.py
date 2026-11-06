@@ -93,6 +93,7 @@ def build(t, config):
     if not pnpm.exists(): raise RuntimeError('Run python scripts/setup-local.py first to install pnpm.')
     if not (ROOT / 'frontend/node_modules/vite/bin/vite.js').exists():
         run([t['node'], pnpm, 'install', '--frozen-lockfile', '--store-dir', LOCAL / 'pnpm-store'], cwd=ROOT / 'frontend')
+    run([t['node'], '--test', ROOT / 'frontend/test/format.test.js'], cwd=ROOT / 'frontend')
     run([t['node'], ROOT / 'frontend/node_modules/vite/bin/vite.js', 'build'], cwd=ROOT / 'frontend')
     run([t['maven'], '-B', '-ntp', '-Dmaven.repo.local=' + str(LOCAL / 'm2'), 'verify'], cwd=ROOT / 'backend', env=environment(t, config))
 

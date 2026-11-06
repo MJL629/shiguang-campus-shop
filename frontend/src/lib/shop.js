@@ -79,5 +79,4 @@ export const statuses = {
   COMPLETED: "已完成",
   CANCELLED: "已取消",
 };
-export const time = (value) =>
-  value ? value.replace("T", " ").slice(0, 16) : "—";
+export { formatTime as time } from "./format.js";

@@ -4,6 +4,7 @@
 **/target
 **/dist
 design
+release
 data/*-original.json
 data/openlibrary-*.json
 *.log

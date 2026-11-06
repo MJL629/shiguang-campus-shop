@@ -4,7 +4,8 @@ import concurrent.futures, datetime, json, time, urllib.request, urllib.parse
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'data'
-IMAGES = ROOT / 'frontend/public/images/catalog'
+PREVIEW = ROOT / '.local/import-preview'
+IMAGES = PREVIEW / 'images'
 DATA.mkdir(exist_ok=True); IMAGES.mkdir(parents=True, exist_ok=True)
 HEADERS = {'User-Agent': 'ShiguangCourseShop/0.1 educational catalog prototype'}
 
@@ -73,13 +74,13 @@ def main():
                                 'sourceUrl': 'https://openlibrary.org' + b['key']})
         except Exception as exc: print('Book lookup failed:', subject, type(exc).__name__, flush=True)
         time.sleep(1.1)
-    (DATA / 'catalog.json').write_text(json.dumps({'importedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'products': catalog}, ensure_ascii=False, indent=2), encoding='utf-8')
+    (PREVIEW / 'catalog.json').write_text(json.dumps({'importedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'products': catalog}, ensure_ascii=False, indent=2), encoding='utf-8')
     columns = ['id','name','category','price','stock','image_url','tagline','description','brand','source_type','source_url']
     keys = ['id','name','category','price','stock','imageUrl','tagline','description','brand','sourceType','sourceUrl']
     lines = ['-- Public prototype merchandise and real bibliographic records. Prices/stocks are fictional.',
              '-- Imported via scripts/import_catalog.py; see data/catalog.json for per-product provenance.']
     lines += ['INSERT INTO product (' + ','.join(columns) + ') VALUES (' + ','.join(sql(p.get(k)) for k in keys) + ');' for p in catalog]
-    (ROOT / 'backend/src/main/resources/db/migration/V4__import_public_catalog.sql').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    print('Imported catalog:', len(catalog), 'products;', sum(p['sourceType']=='OPEN_LIBRARY' for p in catalog), 'real book records', flush=True)
+    (PREVIEW / 'migration-preview.sql').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    print('Prepared review-only catalog preview:', len(catalog), 'products. Existing data and migrations were not overwritten.', flush=True)
 
 if __name__ == '__main__': main()

@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 public class ApiErrors {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   ProblemDetail invalid(MethodArgumentNotValidException error) {
-    return ProblemDetail.forStatusAndDetail(
-        HttpStatus.BAD_REQUEST, "请检查必填项、输入格式和数值范围。");
+    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "请检查必填项、输入格式和数值范围。");
   }
 }

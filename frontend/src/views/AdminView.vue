@@ -254,6 +254,34 @@ onMounted(load);
         <p v-if="!stats.trend.length" class="chart-empty">
           还没有已付款订单，完成一笔演示购买后即可看到趋势。
         </p>
+        <div v-if="stats.statusDistribution.length" class="state-distribution">
+          <h3>订单流转</h3>
+          <div
+            class="segmented-status"
+            role="img"
+            aria-label="当前订单状态数量分布"
+          >
+            <span
+              v-for="item in stats.statusDistribution"
+              :key="item.status"
+              :class="item.status"
+              :title="statuses[item.status] + ' ' + item.count + '笔'"
+              :style="{
+                width:
+                  (Number(item.count) /
+                    Math.max(1, Number(stats.summary.totalOrders))) *
+                    100 +
+                  '%',
+              }"
+            ></span>
+          </div>
+          <div class="distribution-legend">
+            <span v-for="item in stats.statusDistribution" :key="item.status"
+              ><i :class="item.status"></i>{{ statuses[item.status] }}
+              <strong>{{ item.count }}</strong></span
+            >
+          </div>
+        </div>
       </article>
       <article class="chart-panel">
         <div class="panel-title">

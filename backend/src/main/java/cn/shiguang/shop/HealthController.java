@@ -11,8 +11,11 @@ public class HealthController {
   private final JdbcClient jdbc;
   private volatile boolean ready;
 
-  @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
-  public void markReady() { ready = true; }
+  @org.springframework.context.event.EventListener(
+      org.springframework.boot.context.event.ApplicationReadyEvent.class)
+  public void markReady() {
+    ready = true;
+  }
 
   public HealthController(JdbcClient jdbc) {
     this.jdbc = jdbc;
@@ -21,6 +24,7 @@ public class HealthController {
   @GetMapping("/api/health")
   public Map<String, String> health() {
     jdbc.sql("SELECT 1").query(Integer.class).single();
-    return Map.of("status", ready ? "UP" : "STARTING", "database", "UP", "application", "shiguang-shop");
+    return Map.of(
+        "status", ready ? "UP" : "STARTING", "database", "UP", "application", "shiguang-shop");
   }
 }

@@ -5,6 +5,7 @@ RUN npm install -g pnpm@11.25.0
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/.npmrc ./
 RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
+RUN node --test test/format.test.js
 RUN pnpm exec vite build
 
 FROM maven:3.9.11-eclipse-temurin-21 AS backend

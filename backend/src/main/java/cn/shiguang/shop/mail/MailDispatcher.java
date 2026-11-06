@@ -32,7 +32,9 @@ public class MailDispatcher {
     this.mode = mode;
   }
 
-  @Scheduled(fixedDelayString = "${MAIL_POLL_MS:5000}", initialDelayString = "${MAIL_INITIAL_DELAY_MS:5000}")
+  @Scheduled(
+      fixedDelayString = "${MAIL_POLL_MS:5000}",
+      initialDelayString = "${MAIL_INITIAL_DELAY_MS:5000}")
   public void dispatch() {
     jdbc.sql(
             "UPDATE mail_outbox SET"
